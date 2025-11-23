@@ -1,2 +1,14 @@
 .idea
 .venv
+.DS_Store
+.env
+
+.ipynb_checkpoints
+
+# DVC
+.dvc/config.local
+
+mlruns
+/models
+/data
+/dvc_storage
