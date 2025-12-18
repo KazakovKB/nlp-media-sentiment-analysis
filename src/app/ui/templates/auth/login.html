@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Авторизоваться</h1>
+  <p class="lead">Войдите, чтобы выбрать источники, запустить анализ и посмотреть отчёты.</p>
+
+  <div class="grid grid-2" style="margin-top:14px;">
+    <div class="card">
+      {% if error %}
+        <div class="badge err" style="margin-bottom:10px;">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="/login" class="grid" style="max-width:520px;">
+        <div class="field">
+          <label>Почта</label>
+          <input name="email" type="email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="field">
+          <label>Пароль</label>
+          <input name="password" type="password" placeholder="••••••••" required>
+        </div>
+
+        <button class="btn" type="submit">Войти</button>
+
+        <div class="muted">
+          Нет аккаунта? <a href="/register">Регистрация</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Что внутри</div>
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div>
+          <span class="badge ok">Источники</span>
+          <div class="muted2">Просмотр доступных источников и их статистики по документам.</div>
+        </div>
+
+        <div>
+          <span class="badge warn">Анализ</span>
+          <div class="muted2">Запуск анализа по диапазону дат, построение отчётов.</div>
+        </div>
+
+        <div>
+          <span class="badge">Задачи</span>
+          <div class="muted2">Список задач, статусы, детализация.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+    </div>
+  </div>
+{% endblock %}

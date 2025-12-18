@@ -1,0 +1,27 @@
+{% if not overview %}
+  <div class="muted">
+    Отчёт ещё не готов…
+    <span class="htmx-indicator">
+      <span class="spinner"></span>
+    </span>
+  </div>
+{% else %}
+  <div class="card">
+    <div>Total documents: <b>{{ overview.total_documents }}</b></div>
+
+    <div class="muted">
+      Sentiment share:
+      {{ overview.sentiment_share }}
+    </div>
+
+    <div class="muted">
+      Metrics:
+      {{ overview.metrics }}
+    </div>
+
+    <div class="muted">
+      Created at:
+      {{ overview.created_at }}
+    </div>
+  </div>
+{% endif %}

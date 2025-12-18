@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Задача #{{ job.id if job else "?" }}</h2>
+
+  {% if not job %}
+    <div class="card error">Задача не найдена</div>
+  {% else %}
+
+    <div
+      id="job-card"
+      hx-get="/jobs/{{ job.id }}/card"
+      hx-trigger="load, every 2s"
+      hx-swap="outerHTML"
+    >
+      {% include "jobs/_card.html" %}
+    </div>
+
+    <div
+      id="overview"
+      style="margin-top:14px;"
+      {% if job.status != "DONE" %}
+        hx-get="/jobs/{{ job.id }}/overview"
+        hx-trigger="every 2s"
+        hx-swap="innerHTML"
+      {% endif %}
+    >
+      {% include "jobs/_overview.html" %}
+    </div>
+
+  {% endif %}
+{% endblock %}

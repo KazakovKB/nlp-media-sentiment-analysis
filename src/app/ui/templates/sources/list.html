@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Источники</h1>
+
+{% if sources|length == 0 %}
+  <p>Источники отсутствуют.</p>
+{% else %}
+  <div class="sources">
+    {% for s in sources %}
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="title">{{ s.name }}</div>
+          </div>
+
+          <button
+            class="btn"
+            hx-get="/sources/{{ s.id }}/stats"
+            hx-target="#stats-{{ s.id }}"
+            hx-swap="innerHTML">
+            Загрузить статистику
+          </button>
+        </div>
+
+        <div id="stats-{{ s.id }}" class="stats muted">—</div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% endblock %}

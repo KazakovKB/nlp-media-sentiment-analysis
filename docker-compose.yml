@@ -30,5 +30,108 @@ services:
       - postgres_mlflow
     restart: unless-stopped
 
+  db:
+    image: postgres:16
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web-proxy:
+    image: nginx:1.29.0
+    container_name: nginx
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: src/app/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_started
+
+  db_migrate:
+    build:
+      context: .
+      dockerfile: src/app/Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DSN: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  rabbitmq:
+    image: rabbitmq:4.1.2-management
+    container_name: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping || exit 1"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/app/Dockerfile
+    command: python -m src.app.worker.worker
+    volumes:
+      - ./src:/src/src
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    restart: unless-stopped
+    scale: 3
+
+  lenta_init:
+    build:
+      context: .
+      dockerfile: src/app/Dockerfile
+    profiles: ["init"]
+    env_file: [.env]
+    depends_on:
+      db_migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./data/corpus:/data/corpus:ro
+    command: ["python", "scripts/import_lenta.py"]
+
 volumes:
   postgres_data_mlflow:
+  pgdata:
+  rabbitdata:

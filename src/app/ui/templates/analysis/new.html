@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Новая аналитическая задача</h2>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" action="/analysis/jobs">
+      <div style="display:grid; gap:12px; max-width:760px;">
+
+        <label>
+          Источники
+          <br>
+          <select name="source_ids" multiple size="8" required style="width:100%; padding:8px;">
+            {% for s in sources %}
+              <option value="{{ s.id }}">
+                #{{ s.id }} — {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="muted">Подсказка: удерживай Ctrl/Cmd чтобы выбрать несколько.</div>
+        </label>
+
+        <label>
+          Дата с
+          <br>
+          <input name="date_from" type="datetime-local" value="{{ default_from }}" required>
+        </label>
+
+        <label>
+          Дата по
+          <br>
+          <input name="date_to" type="datetime-local" value="{{ default_to }}" required>
+        </label>
+
+        <button class="btn" type="submit">Запустить</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
