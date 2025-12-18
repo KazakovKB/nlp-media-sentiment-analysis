@@ -1,0 +1,83 @@
+from typing import Protocol, Optional, Sequence, Any
+from datetime import datetime
+
+from src.app.domain.entities.document import Document
+from src.app.domain.entities.source import Source
+from src.app.domain.entities.analysis_job import AnalysisJob
+from src.app.domain.entities.overview_report import OverviewReport
+from src.app.domain.entities.user import User
+from src.app.domain.value_objects import AuthCredentials, AnalysisScope, ModelRef
+from src.app.domain.enums import JobStatus
+
+
+class AccountSourceRepo(Protocol):
+    def grant_many(self, account_id: int, source_ids: Sequence[int]) -> None: ...
+    def grant_all_global(self, account_id: int) -> None: ...
+
+class UserRepo(Protocol):
+    def get_by_id(self, user_id: int) -> Optional[User]: ...
+    def get_by_email(self, email: str) -> Optional[User]: ...
+    def get_auth_credentials(self, email: str) -> Optional[AuthCredentials]: ...
+    def create(self, email: str, password_hash: str) -> User: ...
+
+
+class AccountRepo(Protocol):
+    def create(self, name: str) -> int: ...
+    def add_user(self, account_id: int, user_id: int, role: str) -> None: ...
+    def get_user_link(self, user_id: int) -> Optional[tuple[int, str]]: ...
+
+
+class SubscriptionRepo(Protocol):
+    def ensure_free_active(self, account_id: int) -> None: ...
+
+
+class SourceRepo(Protocol):
+    def list_by_account(self, account_id: int) -> list[Source]: ...
+    def get_by_id(self, account_id: int, source_id: int) -> Optional[Source]: ...
+
+
+class DocumentRepo(Protocol):
+    def list_by_sources_and_period(
+        self,
+        source_ids: Sequence[int],
+        date_from: datetime,
+        date_to: datetime,
+        limit: Optional[int] = None,
+    ) -> list[Document]:
+        ...
+    def stats_by_source(self, account_id: int, source_id: int) -> dict[str, Any]: ...
+
+    def count_by_sources_and_period(
+            self,
+            source_ids: list[int],
+            date_from: datetime,
+            date_to: datetime,
+            query: str | None = None,
+    ) -> int: ...
+
+class AnalysisJobRepo(Protocol):
+    def create(
+        self,
+        account_id: int,
+        model: ModelRef,
+        scope: AnalysisScope,
+        params: dict[str, Any],
+    ) -> AnalysisJob: ...
+
+    def set_status(self, job_id: int, status: JobStatus, error: Optional[str] = None) -> None: ...
+
+    def set_done(self, job_id: int) -> None: ...
+    def set_error(self, job_id: int, error: str) -> None: ...
+
+    def list_by_account(self, account_id: int, limit: int = 50) -> list[AnalysisJob]: ...
+    def get_by_id(self, account_id: int, job_id: int) -> Optional[AnalysisJob]: ...
+    def get_by_id_any(self, job_id: int) -> Optional[AnalysisJob]: ...
+
+
+class OverviewRepo(Protocol):
+    def upsert(self, report: OverviewReport) -> None: ...
+    def get_by_job(self, job_id: int) -> Optional[OverviewReport]: ...
+
+
+class TrendRepo(Protocol):
+    def save_many(self, job_id: int, events: list[dict[str, Any]]) -> None: ...

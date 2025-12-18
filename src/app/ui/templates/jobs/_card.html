@@ -1,0 +1,34 @@
+<div class="card">
+  <div>
+    Статус:
+    <b
+      class="
+        {% if job.status == 'DONE' %}badge ok
+        {% elif job.status == 'ERROR' %}badge err
+        {% else %}badge warn{% endif %}
+      "
+    >
+      {{ job.status }}
+    </b>
+  </div>
+
+  <div class="muted">Создан: {{ job.created_at }}</div>
+  <div class="muted">Закончен: {{ job.finished_at or "—" }}</div>
+
+  <div class="divider"></div>
+
+  <div><b>Объём</b></div>
+  <div class="muted">Источники: {{ job.scope.source_ids }}</div>
+  <div class="muted">
+    Период:
+    {{ job.scope.date_range.start }}
+    —
+    {{ job.scope.date_range.end }}
+  </div>
+
+  {% if job.status == "ERROR" %}
+    <div class="badge err" style="margin-top:10px;">
+      {{ job.error }}
+    </div>
+  {% endif %}
+</div>

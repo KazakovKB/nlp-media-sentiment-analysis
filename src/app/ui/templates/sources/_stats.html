@@ -1,0 +1,14 @@
+{% if not stats %}
+  <div class="badge err">Источник не найден.</div>
+{% else %}
+  <div class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+    <div class="card" style="box-shadow:none;">
+      <div class="muted2">Всего документов</div>
+      <div style="font-size:22px; font-weight:700;">{{ stats.total_documents }}</div>
+    </div>
+    <div class="card" style="box-shadow:none;">
+      <div class="muted2">Доступный период</div>
+      <div class="muted">{{ stats.date_min }} — {{ stats.date_max }}</div>
+    </div>
+  </div>
+{% endif %}

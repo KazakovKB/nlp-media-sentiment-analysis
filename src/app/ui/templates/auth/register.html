@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Регистрация</h1>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" action="/register">
+      <div style="display:grid; gap:10px; max-width:420px;">
+        <label>Почта<br><input name="email" type="email" required></label>
+        <label>Пароль<br><input name="password" type="password" required></label>
+        <label>Имя учетной записи<br><input name="account_name" type="text" required></label>
+        <button class="btn" type="submit">Зарегистрироваться</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="muted">
+    Уже есть аккаунт? <a href="/login">Логин</a>
+  </div>
+{% endblock %}

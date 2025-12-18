@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "NLP Insight" }}</title>
+
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111936;
+      --card:#0f1733;
+      --border:rgba(255,255,255,.10);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+      --muted2:rgba(255,255,255,.45);
+      --brand:#8ab4ff;
+      --ok:#54d18f;
+      --warn:#f6c177;
+      --err:#ff6b6b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --r:14px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, -apple-system, system-ui, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 10% 0%, rgba(138,180,255,.18), transparent 60%),
+                  radial-gradient(900px 700px at 90% 0%, rgba(84,209,143,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    a{color:var(--brand); text-decoration:none}
+    a:hover{opacity:.9; text-decoration:underline}
+
+    .container{max-width:1080px; margin:0 auto; padding:22px 18px 42px}
+    .grid{display:grid; gap:14px}
+    .grid-2{grid-template-columns: 1.2fr .8fr}
+    @media (max-width: 980px){ .grid-2{grid-template-columns:1fr} }
+
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      background: linear-gradient(to bottom, rgba(11,16,32,.85), rgba(11,16,32,.55));
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar-inner{
+      max-width:1080px; margin:0 auto; padding:14px 18px;
+      display:flex; align-items:center; gap:14px;
+    }
+    .brand{
+      font-weight:700; letter-spacing:.3px;
+      color:var(--text);
+    }
+    .nav{display:flex; gap:10px; margin-left:10px}
+    .nav a{
+      padding:8px 10px; border-radius:10px;
+      color:var(--muted);
+      border:1px solid transparent;
+    }
+    .nav a.active{
+      color:var(--text);
+      border-color:var(--border);
+      background:rgba(255,255,255,.05);
+    }
+    .spacer{flex:1}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    h1,h2,h3{margin:0 0 10px}
+    h1{font-size:30px; letter-spacing:.2px}
+    h2{font-size:22px}
+    .muted{color:var(--muted)}
+    .muted2{color:var(--muted2)}
+    .lead{color:var(--muted); margin:6px 0 0; line-height:1.45}
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .card-header{display:flex; justify-content:space-between; gap:12px; align-items:flex-start}
+    .card-title{font-weight:650}
+    .divider{height:1px; background:var(--border); margin:12px 0}
+
+    input, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline:none;
+    }
+    label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px}
+    .field{display:grid; gap:6px}
+
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(138,180,255,.14);
+      color:var(--text);
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn:hover{filter:brightness(1.05)}
+    .btn-ghost{ background: rgba(255,255,255,.04); }
+    .btn-danger{ background: rgba(255,107,107,.14); }
+
+    table{width:100%; border-collapse:collapse}
+    th,td{padding:10px 8px; border-bottom:1px solid var(--border); text-align:left}
+    th{color:var(--muted); font-weight:600; font-size:13px}
+
+    .badge{
+      display:inline-flex; align-items:center;
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      font-size:12px; color:var(--muted);
+      background: rgba(255,255,255,.04);
+    }
+    .badge.ok{color:rgba(84,209,143,.95); border-color:rgba(84,209,143,.35); background:rgba(84,209,143,.10)}
+    .badge.err{color:rgba(255,107,107,.95); border-color:rgba(255,107,107,.35); background:rgba(255,107,107,.10)}
+    .badge.warn{color:rgba(246,193,119,.95); border-color:rgba(246,193,119,.35); background:rgba(246,193,119,.10)}
+
+    .empty{
+      padding:14px;
+      border:1px dashed rgba(255,255,255,.20);
+      border-radius: var(--r);
+      color:var(--muted);
+      background: rgba(255,255,255,.02);
+    }
+
+    /* Banner (flash) */
+    .banner-wrap{max-width:1080px; margin:12px auto 0; padding:0 18px;}
+    .banner{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      box-shadow: var(--shadow);
+    }
+    .banner .text{color:var(--text); line-height:1.35}
+    .banner .close{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      border-radius:10px;
+      padding:6px 10px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .banner .close:hover{filter:brightness(1.08)}
+    .banner-warn{border-color: rgba(246,193,119,.35); background: rgba(246,193,119,.10)}
+    .banner-warn .text{color: rgba(246,193,119,.95)}
+    .banner-error{border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.10)}
+    .banner-error .text{color: rgba(255,107,107,.95)}
+    .banner-ok{border-color: rgba(84,209,143,.35); background: rgba(84,209,143,.10)}
+    .banner-ok .text{color: rgba(84,209,143,.95)}
+
+    /* HTMX */
+    .htmx-indicator{display:none}
+    .htmx-request .htmx-indicator{display:inline-flex}
+    .spinner{
+      width:14px; height:14px; border-radius:999px;
+      border:2px solid rgba(255,255,255,.25);
+      border-top-color: rgba(255,255,255,.85);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">NLP Insight</div>
+
+      <nav class="nav">
+        <a href="/sources" class="{% if active=='sources' %}active{% endif %}">Источники</a>
+        <a href="/analysis/new" class="{% if active=='analysis' %}active{% endif %}">Анализ</a>
+        <a href="/jobs" class="{% if active=='jobs' %}active{% endif %}">Задачи</a>
+      </nav>
+
+      <div class="spacer"></div>
+
+      {% if ctx %}
+        <form method="post" action="/logout" style="margin:0">
+          <button class="btn btn-ghost" type="submit">Logout</button>
+        </form>
+      {% else %}
+        <a class="btn btn-ghost" href="/login">Авторизоваться</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if banner %}
+    <div class="banner-wrap">
+      <div class="banner banner-{{ banner.level or 'warn' }}">
+        <div class="text">{{ banner.text }}</div>
+        <button class="close" type="button" onclick="this.closest('.banner-wrap').remove()">ОК</button>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
