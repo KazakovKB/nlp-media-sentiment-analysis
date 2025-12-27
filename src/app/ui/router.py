@@ -17,7 +17,7 @@ from src.app.domain.contracts.uow import UoW
 from src.app.services.auth_service import AuthService
 from src.app.services.sources_service import SourcesService
 from src.app.services.analysis_service import AnalysisService
-from src.app.domain.value_objects import ModelRef, AnalysisScope, DateRange
+from src.app.domain.value_objects import AnalysisScope, DateRange
 
 
 # templates
@@ -223,7 +223,6 @@ async def ui_analysis_create_job(
             date_range=dr,
             query=(form.get("query") or None),
         )
-        model = ModelRef(name="rubert-tiny2", version="v1")
 
     except Exception as e:
         return _render_error(f"Некорректные данные формы: {e}")
@@ -232,7 +231,7 @@ async def ui_analysis_create_job(
 
     # создаём job
     try:
-        job = await run_in_threadpool(svc.create_job, ctx.account_id, model, scope, {})
+        job = await run_in_threadpool(svc.create_job, ctx.account_id, scope)
     except ValueError as e:
         return _render_error(str(e))
     except Exception as e:

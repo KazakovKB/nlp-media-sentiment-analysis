@@ -6,7 +6,7 @@ from src.app.domain.entities.source import Source
 from src.app.domain.entities.analysis_job import AnalysisJob
 from src.app.domain.entities.overview_report import OverviewReport
 from src.app.domain.entities.user import User
-from src.app.domain.value_objects import AuthCredentials, AnalysisScope, ModelRef
+from src.app.domain.value_objects import AuthCredentials, AnalysisScope
 from src.app.domain.enums import JobStatus
 
 
@@ -59,9 +59,7 @@ class AnalysisJobRepo(Protocol):
     def create(
         self,
         account_id: int,
-        model: ModelRef,
         scope: AnalysisScope,
-        params: dict[str, Any],
     ) -> AnalysisJob: ...
 
     def set_status(self, job_id: int, status: JobStatus, error: Optional[str] = None) -> None: ...

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Sequence
+from typing import Optional, List
 
 
 @dataclass(frozen=True)
@@ -10,12 +10,7 @@ class DateRange:
 
     def __post_init__(self):
         if self.end <= self.start:
-            raise ValueError("Invalid date range")
-
-@dataclass(frozen=True)
-class ModelRef:
-    name: str
-    version: str
+            raise ValueError("Неверный диапазон дат.")
 
 @dataclass(frozen=True)
 class SentimentProbs:
@@ -30,7 +25,7 @@ class SentimentProbs:
 
 @dataclass(frozen=True)
 class AnalysisScope:
-    source_ids: Sequence[int]
+    source_ids: List[int]
     date_range: DateRange
     query: Optional[str] = None
 

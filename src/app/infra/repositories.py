@@ -1,20 +1,18 @@
-from __future__ import annotations
-
-from typing import Optional, Sequence, Any
+from typing import Optional, Sequence, Type
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from src.app.infra.models import (
-    UserORM, AccountORM, AccountUserORM, SubscriptionORM,
-    SourceORM, AccountSourceORM,
-    DocumentORM,
-    AnalysisJobORM, OverviewReportORM, TrendEventORM,
+    UserORM, AccountORM, AccountUserORM,
+    SubscriptionORM, SourceORM, AccountSourceORM,
+    DocumentORM, AnalysisJobORM, OverviewReportORM,
+    TrendEventORM,
 )
 
 from src.app.domain.enums import JobStatus
-from src.app.domain.value_objects import AnalysisScope, DateRange, AuthCredentials, ModelRef
+from src.app.domain.value_objects import AnalysisScope, DateRange, AuthCredentials
 from src.app.domain.entities.user import User
 from src.app.domain.entities.source import Source
 from src.app.domain.entities.document import Document
@@ -23,7 +21,7 @@ from src.app.domain.entities.overview_report import OverviewReport
 
 
 # mappers ORM -> Domain
-def _user_dom(u: UserORM) -> User:
+def _user_dom(u: Type[UserORM] | UserORM) -> User:
     return User(
         id=int(u.id),
         email=str(u.email),
@@ -32,14 +30,14 @@ def _user_dom(u: UserORM) -> User:
     )
 
 
-def _auth_creds_dom(u: UserORM) -> AuthCredentials:
+def _auth_creds_dom(u: Type[UserORM]) -> AuthCredentials:
     return AuthCredentials(
         user_id=int(u.id),
         password_hash=str(u.password_hash),
     )
 
 
-def _source_dom(s: SourceORM) -> Source:
+def _source_dom(s: SourceORM | Type[SourceORM]) -> Source:
     return Source(
         id=int(s.id),
         name=str(s.name),
@@ -50,7 +48,7 @@ def _source_dom(s: SourceORM) -> Source:
     )
 
 
-def _doc_dom(d: DocumentORM) -> Document:
+def _doc_dom(d: DocumentORM | Type[DocumentORM]) -> Document:
     return Document(
         id=int(d.id),
         source_id=int(d.source_id),
@@ -91,21 +89,19 @@ def _scope_to_dict(scope: AnalysisScope) -> dict:
     }
 
 
-def _job_dom(j: AnalysisJobORM) -> AnalysisJob:
+def _job_dom(j: AnalysisJobORM | Type[AnalysisJobORM]) -> AnalysisJob:
     return AnalysisJob(
         id=int(j.id),
         account_id=int(j.account_id),
         scope=_scope_from_dict(j.scope),
-        model=ModelRef(name=str(j.model_name), version=str(j.model_version)),
         status=JobStatus(str(j.status)),
         created_at=j.created_at,
-        params=j.params or {},
         error=j.error or "",
         finished_at=j.finished_at,
     )
 
 
-def _overview_dom(r: OverviewReportORM) -> OverviewReport:
+def _overview_dom(r: OverviewReportORM | Type[OverviewReportORM]) -> OverviewReport:
     return OverviewReport(
         job_id=int(r.job_id),
         total_documents=int(r.total_documents),
@@ -331,17 +327,12 @@ class SqlAnalysisJobRepo:
     def create(
         self,
         account_id: int,
-        model: ModelRef,
         scope: AnalysisScope,
-        params: dict[str, Any],
     ) -> AnalysisJob:
         j = AnalysisJobORM(
             account_id=account_id,
             status=JobStatus.PENDING.value,
-            model_name=model.name,
-            model_version=model.version,
             scope=_scope_to_dict(scope),
-            params=params or {},
         )
         self.db.add(j)
         self.db.flush()

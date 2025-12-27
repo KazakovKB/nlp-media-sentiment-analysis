@@ -4,7 +4,7 @@ import os
 import torch
 
 from src.app.domain.contracts.uow import UoW
-from src.app.domain.value_objects import AnalysisScope, ModelRef
+from src.app.domain.value_objects import AnalysisScope
 from src.app.domain.services.scope_filter import filter_documents
 from src.app.domain.services.trend_detection import detect_trends
 from src.app.domain.entities.overview_report import OverviewReport
@@ -16,7 +16,7 @@ class AnalysisService:
     def __init__(self, uow: UoW):
         self.uow = uow
 
-        # FEATURE FLAGS
+        # Feature flags
         self.sentiment_enabled = os.getenv("SENTIMENT_ENABLED", "0") == "1"
         self.sentiment_fail_open = os.getenv("SENTIMENT_FAIL_OPEN", "1") == "1"
 
@@ -43,12 +43,12 @@ class AnalysisService:
             query=scope.query,
         )
 
-    def create_job(self, account_id: int, model: ModelRef, scope: AnalysisScope, params: dict):
+    def create_job(self, account_id: int, scope: AnalysisScope):
         cnt = self.estimate_scope_docs_count(account_id, scope)
         if cnt == 0:
             raise ValueError("За выбранный период документов не найдено. Измените даты или источники.")
 
-        job = self.uow.analysis.create(account_id, model, scope, params)
+        job = self.uow.analysis.create(account_id, scope)
         self.uow.analysis.set_status(job.id, JobStatus.PENDING)
         self.uow.commit()
         return self.uow.analysis.get_by_id(account_id, job.id)

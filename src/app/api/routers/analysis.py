@@ -10,7 +10,7 @@ from src.app.api.schemas import (
 from src.app.api.deps import get_analysis_service
 from src.app.services.analysis_service import AnalysisService
 from src.app.infra.mq import enqueue_analysis_job
-from src.app.domain.value_objects import AnalysisScope, DateRange, ModelRef
+from src.app.domain.value_objects import AnalysisScope, DateRange
 
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
@@ -27,15 +27,12 @@ async def create_job(
         date_range=DateRange(start=req.scope.date_range.start, end=req.scope.date_range.end),
         query=req.scope.query,
     )
-    model = ModelRef(name="rubert-tiny2", version="v1")
 
     # Создаём job
     try:
         job = svc.create_job(
             account_id=ctx.account_id,
-            model=model,
             scope=scope,
-            params=req.params,
         )
         if not job:
             raise HTTPException(status_code=500, detail="Job not returned")
@@ -46,7 +43,7 @@ async def create_job(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    # Публикуем в очередь. Если publish упал – проставляем ERROR.
+    # Публикуем в очередь. Если publish упал проставляем ERROR.
     try:
         await enqueue_analysis_job({"job_id": job.id})
     except Exception as e:

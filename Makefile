@@ -7,7 +7,7 @@ ENV ?= .env
 up: ## Поднять инфраструктуру и приложение
 	$(COMPOSE) up -d db
 	$(COMPOSE) run --rm db_migrate
-	$(COMPOSE) up -d --build app
+	$(COMPOSE) up -d app
 
 down: ## Остановить всё и удалить контейнеры
 	$(COMPOSE) down
