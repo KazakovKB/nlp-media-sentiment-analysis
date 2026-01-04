@@ -1,6 +1,7 @@
 services:
   postgres_mlflow:
     image: postgres:16
+    profiles: ["mlflow"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER_MLFLOW}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_MLFLOW}
@@ -15,6 +16,7 @@ services:
     build:
       context: .
       dockerfile: docker/mlflow/Dockerfile
+    profiles: ["mlflow"]
     command: >
       mlflow server
       --backend-store-uri postgresql://${POSTGRES_USER_MLFLOW}:${POSTGRES_PASSWORD_MLFLOW}@postgres_mlflow:5432/${POSTGRES_DB_MLFLOW}
@@ -49,6 +51,23 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  db_test:
+    image: postgres:16
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_TEST}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB_TEST" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
+
   web-proxy:
     image: nginx:1.29.0
     container_name: nginx
@@ -82,6 +101,19 @@ services:
       POSTGRES_DSN: ${DATABASE_URL}
     depends_on:
       db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  db_migrate_test:
+    build:
+      context: .
+      dockerfile: src/app/Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DSN: ${DATABASE_URL_TEST}
+    depends_on:
+      db_test:
         condition: service_healthy
     command: ["alembic", "upgrade", "head"]
 
@@ -134,4 +166,5 @@ services:
 volumes:
   postgres_data_mlflow:
   pgdata:
+  pgdata_test:
   rabbitdata:
