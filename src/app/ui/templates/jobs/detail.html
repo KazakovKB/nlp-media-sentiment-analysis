@@ -6,25 +6,33 @@
     <div class="card error">Задача не найдена</div>
   {% else %}
 
-    <div
-      id="job-card"
-      hx-get="/jobs/{{ job.id }}/card"
-      hx-trigger="load, every 2s"
-      hx-swap="outerHTML"
-    >
-      {% include "jobs/_card.html" %}
-    </div>
+    <div id="job-panel">
+      <div id="job-card">
+        {% include "jobs/_card.html" %}
+      </div>
 
-    <div
-      id="overview"
-      style="margin-top:14px;"
-      {% if job.status != "DONE" %}
-        hx-get="/jobs/{{ job.id }}/overview"
-        hx-trigger="every 2s"
-        hx-swap="innerHTML"
+      <div style="height:14px"></div>
+
+      {% if job.status == "DONE" %}
+        <a class="btn" href="/jobs/{{ job.id }}/report">Открыть отчёт</a>
+
+      {% elif job.status == "ERROR" %}
+        <div class="badge err" style="margin-top:10px;">{{ job.error }}</div>
+
+      {% else %}
+        <div class="muted">Отчёт готовится. Нажмите «Обновить статус».</div>
+        <div style="height:10px"></div>
+
+        <button
+          class="btn btn-ghost"
+          hx-get="/jobs/{{ job.id }}"
+          hx-target="#job-panel"
+          hx-select="#job-panel"
+          hx-swap="outerHTML"
+        >
+          Обновить статус
+        </button>
       {% endif %}
-    >
-      {% include "jobs/_overview.html" %}
     </div>
 
   {% endif %}

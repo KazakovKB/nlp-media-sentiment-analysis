@@ -42,3 +42,12 @@ class PlanCapabilities:
 class AuthCredentials:
     user_id: int
     password_hash: str
+
+
+@dataclass(frozen=True)
+class TrendSignal:
+    ts: datetime
+    kind: str
+    value: float
+    baseline: float
+    z: float

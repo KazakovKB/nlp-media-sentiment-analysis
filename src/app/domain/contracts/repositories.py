@@ -6,6 +6,7 @@ from src.app.domain.entities.source import Source
 from src.app.domain.entities.analysis_job import AnalysisJob
 from src.app.domain.entities.overview_report import OverviewReport
 from src.app.domain.entities.user import User
+from src.app.domain.entities.trend_event import TrendEvent
 from src.app.domain.value_objects import AuthCredentials, AnalysisScope
 from src.app.domain.enums import JobStatus
 
@@ -78,4 +79,5 @@ class OverviewRepo(Protocol):
 
 
 class TrendRepo(Protocol):
-    def save_many(self, job_id: int, events: list[dict[str, Any]]) -> None: ...
+    def save_many(self, job_id: int, events: list[TrendEvent]) -> None: ...
+    def list_by_job(self, job_id: int, limit: int | None = None) -> list[TrendEvent]: ...

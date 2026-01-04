@@ -1,0 +1,77 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Тренды</div>
+      <div class="muted2">События аномалий по дневному ряду (spike/drop)</div>
+    </div>
+    <span class="badge">{{ (trends|length) if trends else 0 }}</span>
+  </div>
+
+  <div class="divider"></div>
+
+  {% if not trends or trends|length == 0 %}
+    <div class="empty">Тренды не обнаружены.</div>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px">Дата</th>
+          <th style="width:90px">Тип</th>
+          <th style="width:90px">Значение</th>
+          <th style="width:90px">Baseline</th>
+          <th style="width:90px">Δ</th>
+          <th style="width:90px">Δ%</th>
+          <th style="width:70px">z</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in trends %}
+          {% set delta = (t.value - t.baseline) %}
+          {% set delta_pct = ((delta / t.baseline) * 100) if t.baseline else none %}
+
+          <tr>
+            <td class="muted">{{ t.ts | format_dt("%d.%m.%Y") }}</td>
+
+            <td>
+              {% if t.kind == "spike" %}
+                <span class="badge ok">spike</span>
+              {% elif t.kind == "drop" %}
+                <span class="badge err">drop</span>
+              {% else %}
+                <span class="badge">{{ t.kind }}</span>
+              {% endif %}
+            </td>
+
+            <td><b>{{ t.value|round(2) }}</b></td>
+            <td class="muted">{{ t.baseline|round(2) }}</td>
+
+            <td>
+              {% if delta >= 0 %}
+                <span class="badge ok">+{{ delta|round(2) }}</span>
+              {% else %}
+                <span class="badge err">{{ delta|round(2) }}</span>
+              {% endif %}
+            </td>
+
+            <td class="muted">
+              {% if delta_pct is not none %}
+                {{ delta_pct|round(1) }}%
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td class="muted2">
+              {{ t.z|round(2) }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="muted2" style="margin-top:10px;">
+      Интерпретация: <b>spike</b> — значение значительно выше исторического среднего (rolling z-score),
+      <b>drop</b> — значительно ниже.
+    </div>
+  {% endif %}
+</div>

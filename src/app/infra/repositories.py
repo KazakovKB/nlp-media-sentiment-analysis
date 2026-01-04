@@ -18,6 +18,7 @@ from src.app.domain.entities.source import Source
 from src.app.domain.entities.document import Document
 from src.app.domain.entities.analysis_job import AnalysisJob
 from src.app.domain.entities.overview_report import OverviewReport
+from src.app.domain.entities.trend_event import TrendEvent
 
 
 # mappers ORM -> Domain
@@ -341,7 +342,7 @@ class SqlAnalysisJobRepo:
     def set_status(self, job_id: int, status: JobStatus, error: str | None = None) -> None:
         j = self.db.query(AnalysisJobORM).filter(AnalysisJobORM.id == job_id).first()
         if not j:
-            raise ValueError("Job not found")
+            raise ValueError("Задача не найдена.")
 
         j.status = status.value
 
@@ -408,20 +409,57 @@ class SqlOverviewRepo:
         return _overview_dom(r) if r else None
 
 
+
 class SqlTrendRepo:
     def __init__(self, db: Session):
         self.db = db
 
-    def save_many(self, job_id: int, events: list[dict]) -> None:
+    def save_many(self, job_id: int, events: list[TrendEvent]) -> None:
+        for ev in events:
+            if ev.job_id != job_id:
+                raise ValueError(f"TrendEvent.job_id mismatch: {ev.job_id} != {job_id}")
+
+        self.db.query(TrendEventORM)\
+            .filter(TrendEventORM.job_id == job_id)\
+            .delete(synchronize_session=False)
+
         for ev in events:
             self.db.add(
                 TrendEventORM(
                     job_id=job_id,
-                    start_ts=ev["start_ts"],
-                    end_ts=ev["end_ts"],
-                    label=ev.get("label", "spike"),
-                    score=float(ev.get("score", 0.0)),
-                    top_doc_ids=ev.get("top_doc_ids", []),
+                    ts=ev.ts,
+                    kind=ev.kind,
+                    value=float(ev.value),
+                    baseline=float(ev.baseline),
+                    z=float(ev.z),
                 )
             )
+
         self.db.flush()
+
+    def list_by_job(self, job_id: int, limit: int | None = None) -> list[TrendEvent]:
+        """
+        Возвращает тренд-события по задаче.
+        """
+        q = (
+            self.db.query(TrendEventORM)
+            .filter(TrendEventORM.job_id == job_id)
+            .order_by(TrendEventORM.ts.asc())
+        )
+
+        if limit:
+            q = q.limit(limit)
+
+        rows = q.all()
+
+        return [
+            TrendEvent(
+                job_id=row.job_id,
+                ts=row.ts,
+                kind=row.kind,
+                value=row.value,
+                baseline=row.baseline,
+                z=row.z,
+            )
+            for row in rows
+        ]

@@ -17,7 +17,7 @@
         <tr>
           <td>{{ j.id }}</td>
           <td>{{ j.status }}</td>
-          <td class="muted">{{ j.created_at }}</td>
+          <td class="muted">{{ j.created_at | format_dt }}</td>
           <td><a href="/jobs/{{ j.id }}">Открыть</a></td>
         </tr>
       {% endfor %}

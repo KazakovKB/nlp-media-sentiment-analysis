@@ -1,0 +1,79 @@
+<div class="card" style="margin-top:14px;">
+  <div class="card-header">
+    <div class="card-title">Динамика публикаций по дням</div>
+    <span class="badge" id="seriesStatus">—</span>
+  </div>
+  <div class="divider"></div>
+  <canvas id="dailyChart" height="110"></canvas>
+</div>
+
+<script>
+(function () {
+  const jobId = {{ job_id }};
+  const url = `/jobs/${jobId}/series`;
+
+  const canvas = document.getElementById("dailyChart");
+  if (!canvas) return;
+
+  if (canvas.dataset.bound === "1") return;
+  canvas.dataset.bound = "1";
+
+  async function fetchSeries() {
+    const r = await fetch(url, { headers: { "Accept": "application/json" } });
+    if (!r.ok) return null;
+    return await r.json();
+  }
+
+  function render(canvas, labels, values, points) {
+    const ctx = canvas.getContext("2d");
+    const chart = new Chart(ctx, {
+      data: {
+        labels,
+        datasets: [
+          { type: "line", label: "Документы", data: values, tension: 0.25, pointRadius: 2 },
+          { type: "scatter", label: "Тренды", data: points || [], pointRadius: 5, pointHoverRadius: 7 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                if (ctx.dataset && ctx.dataset.type === "scatter") {
+                  const raw = ctx.raw || {};
+                  const kind = raw.kind || "trend";
+                  const z = (raw.z !== undefined) ? `z=${Number(raw.z).toFixed(2)}` : "";
+                  const base = (raw.baseline !== undefined) ? `baseline=${Number(raw.baseline).toFixed(1)}` : "";
+                  const val = (raw.y !== undefined) ? `value=${Number(raw.y).toFixed(0)}` : "";
+                  return ` ${kind}: ${val} ${base} ${z}`.trim();
+                }
+                return ` ${ctx.dataset.label}: ${ctx.formattedValue}`;
+              }
+            }
+          }
+        },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    return chart;
+  }
+
+  (async function init() {
+    const payload = await fetchSeries();
+    if (!payload) return;
+
+    const labels = payload.labels || [];
+    const values = payload.values || [];
+    const points = payload.points || [];
+    const status = payload.status || "UNKNOWN";
+
+    const stEl = document.getElementById("seriesStatus");
+    if (stEl) stEl.textContent = status;
+
+    render(canvas, labels, values, points);
+  })();
+})();
+</script>
