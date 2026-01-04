@@ -143,10 +143,7 @@ class AnalysisJobORM(Base):
     status = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     finished_at = Column(DateTime(timezone=True), nullable=True)
-    model_name = Column(String, nullable=False)
-    model_version = Column(String, nullable=False)
     scope = Column(JSONB, nullable=False)
-    params = Column(JSONB, nullable=False, server_default=sa_text("'{}'::jsonb"))
     error = Column(Text, nullable=True)
 
     __table_args__ = (
@@ -198,19 +195,23 @@ class TrendEventORM(Base):
     __tablename__ = "trend_events"
 
     id = Column(BigInteger, Identity(), primary_key=True)
+
     job_id = Column(
         BigInteger,
         ForeignKey("analysis_jobs.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
-    start_ts = Column(DateTime(timezone=True), nullable=False)
-    end_ts = Column(DateTime(timezone=True), nullable=False)
-    label = Column(String, nullable=False)
-    score = Column(Float, nullable=False)
+
+    ts = Column(DateTime(timezone=True), nullable=False)
+    kind = Column(String, nullable=False)
+    value = Column(Float, nullable=False)
+    baseline = Column(Float, nullable=False)
+    z = Column(Float, nullable=False)
     top_doc_ids = Column(JSONB, nullable=False, server_default=sa_text("'[]'::jsonb"))
 
     __table_args__ = (
-        Index("idx_trend_events_job", "job_id"),
+        Index("idx_trend_events_job_ts", "job_id", "ts"),
     )
 
 

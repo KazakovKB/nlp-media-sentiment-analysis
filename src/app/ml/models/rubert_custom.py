@@ -24,8 +24,8 @@ class RuBertTiny2CustomHead(nn.Module):
         else:
             mask = attention_mask.unsqueeze(-1)
             summed = (last_hidden * mask).sum(1)
-            denom = mask.sum(1).clamp(min=1e-9)
-            mean_emb = summed / denom
+            denominator = mask.sum(1).clamp(min=1e-9)
+            mean_emb = summed / denominator
 
         x = torch.cat([cls_emb, mean_emb], dim=-1)
         x = self.dropout(x)

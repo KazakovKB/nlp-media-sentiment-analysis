@@ -4,10 +4,11 @@ import os
 import torch
 
 from src.app.domain.contracts.uow import UoW
-from src.app.domain.value_objects import AnalysisScope, ModelRef
+from src.app.domain.value_objects import AnalysisScope
 from src.app.domain.services.scope_filter import filter_documents
 from src.app.domain.services.trend_detection import detect_trends
 from src.app.domain.entities.overview_report import OverviewReport
+from src.app.domain.entities.trend_event import TrendEvent
 from src.app.domain.enums import JobStatus
 from src.app.ml.registry import get_sentiment_model
 
@@ -16,7 +17,7 @@ class AnalysisService:
     def __init__(self, uow: UoW):
         self.uow = uow
 
-        # FEATURE FLAGS
+        # Feature flags
         self.sentiment_enabled = os.getenv("SENTIMENT_ENABLED", "0") == "1"
         self.sentiment_fail_open = os.getenv("SENTIMENT_FAIL_OPEN", "1") == "1"
 
@@ -34,7 +35,7 @@ class AnalysisService:
     def estimate_scope_docs_count(self, account_id: int, scope: AnalysisScope) -> int:
         for sid in scope.source_ids:
             if not self.uow.sources.get_by_id(account_id, int(sid)):
-                raise ValueError(f"Источник не найден или запрещен: {sid}")
+                raise ValueError(f"Источник не найден или недоступен: {sid}")
 
         return self.uow.documents.count_by_sources_and_period(
             source_ids=scope.source_ids,
@@ -43,12 +44,12 @@ class AnalysisService:
             query=scope.query,
         )
 
-    def create_job(self, account_id: int, model: ModelRef, scope: AnalysisScope, params: dict):
+    def create_job(self, account_id: int, scope: AnalysisScope):
         cnt = self.estimate_scope_docs_count(account_id, scope)
         if cnt == 0:
             raise ValueError("За выбранный период документов не найдено. Измените даты или источники.")
 
-        job = self.uow.analysis.create(account_id, model, scope, params)
+        job = self.uow.analysis.create(account_id, scope)
         self.uow.analysis.set_status(job.id, JobStatus.PENDING)
         self.uow.commit()
         return self.uow.analysis.get_by_id(account_id, job.id)
@@ -84,7 +85,7 @@ class AnalysisService:
     def _run_overview(self, job_id: int, account_id: int, scope: AnalysisScope) -> None:
         for sid in scope.source_ids:
             if not self.uow.sources.get_by_id(account_id, int(sid)):
-                raise ValueError(f"Источник не найден или запрещен: {sid}")
+                raise ValueError(f"Источник не найден или недоступен: {sid}")
 
         docs = self.uow.documents.list_by_sources_and_period(
             source_ids=scope.source_ids,
@@ -101,7 +102,7 @@ class AnalysisService:
         texts = [d.text for d in filtered if d.text]
         total = len(texts)
 
-        # --- SENTIMENT ---
+        # SENTIMENT
         sentiment_share = None
         sentiment_mode = "disabled"
         sentiment_error = None
@@ -110,7 +111,7 @@ class AnalysisService:
             sentiment_share = {"negative": 0.0, "neutral": 1.0, "positive": 0.0}
             sentiment_mode = "empty"
         elif not self.sentiment_enabled:
-            # Заглушка
+            # заглушка
             sentiment_share = {"negative": 0.0, "neutral": 1.0, "positive": 0.0}
             sentiment_mode = "stub"
         else:
@@ -146,13 +147,24 @@ class AnalysisService:
                 sentiment_error = str(e)
                 if not self.sentiment_fail_open:
                     raise
-                # fail-open: не валим job, даём заглушку
+                # заглушка
                 sentiment_share = {"negative": 0.0, "neutral": 1.0, "positive": 0.0}
                 sentiment_mode = "fallback"
 
         # TRENDS
         ts = _build_daily_count_series(filtered)
-        events = detect_trends(ts)
+        signals = detect_trends(ts)
+        events = [
+            TrendEvent(
+                job_id=job_id,
+                ts=s.ts,
+                kind=s.kind,
+                value=s.value,
+                baseline=s.baseline,
+                z=s.z,
+            )
+            for s in signals
+        ]
         self.uow.trend.save_many(job_id, events)
 
         # OVERVIEW
@@ -164,7 +176,9 @@ class AnalysisService:
             "timeseries_days": len(ts),
             "trends_found": len(events),
             "sentiment_mode": sentiment_mode,
+            "daily_series": [{"ts": x["ts"].isoformat(), "value": int(x["value"])} for x in ts]
         }
+
         if sentiment_error:
             metrics["sentiment_error"] = sentiment_error  # чтобы видеть в UI причину
 
@@ -196,6 +210,12 @@ class AnalysisService:
         if not j or j.status != JobStatus.DONE:
             return None
         return self.uow.overview.get_by_job(job_id)
+
+    def get_trends(self, account_id: int, job_id: int):
+        j = self.uow.analysis.get_by_id(account_id, job_id)
+        if not j:
+            return []
+        return self.uow.trend.list_by_job(job_id)
 
 
 def _batch(items: list[str], size: int):

@@ -6,22 +6,84 @@
     </span>
   </div>
 {% else %}
+  {% set sm = sources_map|default({}) %}
+
+  <h3>Обзор</h3>
+
   <div class="card">
-    <div>Total documents: <b>{{ overview.total_documents }}</b></div>
+    <div class="card-header">
+      <div>
+        <div class="card-title">Параметры анализа</div>
+        <div class="muted2">Создано: {{ overview.created_at }}</div>
+      </div>
 
-    <div class="muted">
-      Sentiment share:
-      {{ overview.sentiment_share }}
+      {% if overview.sentiment_mode in ["model"] %}
+        <span class="badge ok">Sentiment: model</span>
+      {% elif overview.sentiment_mode in ["stub", "disabled", "empty", "fallback"] %}
+        <span class="badge warn">Sentiment: {{ overview.sentiment_mode }}</span>
+      {% else %}
+        <span class="badge">Sentiment: {{ overview.sentiment_mode }}</span>
+      {% endif %}
     </div>
 
-    <div class="muted">
-      Metrics:
-      {{ overview.metrics }}
+    <div class="divider"></div>
+
+    <div class="grid grid-2">
+      <div>
+        <div>Документов: <b>{{ overview.total_documents }}</b></div>
+        <div>Период: {{ overview.period }}</div>
+        <div>Запрос: {{ overview.query }}</div>
+      </div>
+
+      <div>
+        <div class="muted">Источники:</div>
+        <div>
+          {% for sid in overview.sources %}
+            <span class="badge">{{ sm.get(sid, sid) }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:14px"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">KPI</div>
+      <span class="badge">Трендов: {{ overview.trends_found }}</span>
     </div>
 
-    <div class="muted">
-      Created at:
-      {{ overview.created_at }}
+    <div class="divider"></div>
+
+    <div class="grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+      <div class="card" style="padding:12px; box-shadow:none;">
+        <div class="muted2">Дней в ряду</div>
+        <div style="font-size:20px; font-weight:700;">{{ overview.days_count }}</div>
+      </div>
+
+      <div class="card" style="padding:12px; box-shadow:none;">
+        <div class="muted2">Среднее / день</div>
+        <div style="font-size:20px; font-weight:700;">{{ overview.avg_per_day }}</div>
+      </div>
+
+      <div class="card" style="padding:12px; box-shadow:none;">
+        <div class="muted2">Пик / день</div>
+        <div style="font-size:20px; font-weight:700;">{{ overview.peak_per_day }}</div>
+        <div class="muted2">{{ overview.peak_day }}</div>
+      </div>
+
+      <div class="card" style="padding:12px; box-shadow:none;">
+        <div class="muted2">Доминирующая тональность</div>
+        {% set dom = overview.dominant_sentiment %}
+        {% if dom == "positive" %}
+          <span class="badge ok">positive</span>
+        {% elif dom == "negative" %}
+          <span class="badge err">negative</span>
+        {% else %}
+          <span class="badge">neutral</span>
+        {% endif %}
+      </div>
     </div>
   </div>
 {% endif %}

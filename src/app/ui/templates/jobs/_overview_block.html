@@ -1,0 +1,24 @@
+<div
+  id="overview_block"
+  style="margin-top:14px;"
+  hx-get="/jobs/{{ job_id }}/overview-block"
+  {% if job and job.status not in ["DONE", "ERROR"] %}
+    hx-trigger="load, every 2s"
+  {% else %}
+    hx-trigger="load"
+  {% endif %}
+  hx-swap="innerHTML"
+>
+  {% include "jobs/_overview.html" %}
+
+  {% if overview %}
+    <div style="height:14px"></div>
+    {% include "jobs/_chart.html" %}
+
+    <div style="height:14px"></div>
+    {% include "jobs/_sentiment.html" %}
+
+    <div style="height:14px"></div>
+    {% include "jobs/_trends.html" %}
+  {% endif %}
+</div>

@@ -1,0 +1,103 @@
+{% if overview %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Sentiment (share)</div>
+
+      {% if overview.sentiment_mode in ["model"] %}
+        <span class="badge ok">model</span>
+      {% elif overview.sentiment_mode in ["stub", "disabled", "empty", "fallback"] %}
+        <span class="badge warn">{{ overview.sentiment_mode }}</span>
+      {% else %}
+        <span class="badge">{{ overview.sentiment_mode }}</span>
+      {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid" style="grid-template-columns: 340px 1fr; gap: 14px; align-items:center;">
+      <div style="position:relative; width: 340px; max-width: 100%; margin: 0 auto;">
+        <canvas id="sentimentDonut"></canvas>
+
+        <div style="
+          position:absolute; inset:0;
+          display:flex; flex-direction:column;
+          align-items:center; justify-content:center;
+          pointer-events:none;">
+          <div class="muted2" style="font-size:12px;">Всего документов</div>
+          <div style="font-size:22px; font-weight:800;">{{ overview.total_documents }}</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+          <div class="card" style="padding:12px; box-shadow:none;">
+            <div class="muted2">Neutral</div>
+            <div style="font-size:22px; font-weight:800;">{{ overview.sentiment.neutral.pct }}</div>
+            <div class="muted2">raw: {{ "%.4f"|format(overview.sentiment.neutral.raw) }}</div>
+          </div>
+
+          <div class="card" style="padding:12px; box-shadow:none;">
+            <div class="muted2">Negative</div>
+            <div style="font-size:22px; font-weight:800;">{{ overview.sentiment.negative.pct }}</div>
+            <div class="muted2">raw: {{ "%.4f"|format(overview.sentiment.negative.raw) }}</div>
+          </div>
+
+          <div class="card" style="padding:12px; box-shadow:none;">
+            <div class="muted2">Positive</div>
+            <div style="font-size:22px; font-weight:800;">{{ overview.sentiment.positive.pct }}</div>
+            <div class="muted2">raw: {{ "%.4f"|format(overview.sentiment.positive.raw) }}</div>
+          </div>
+        </div>
+
+        <div class="muted2" style="margin-top:10px; line-height:1.4;">
+          Donut показывает долю тональностей среди документов в выбранном периоде.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const el = document.getElementById("sentimentDonut");
+      if (!el || el.dataset.bound === "1") return;
+      el.dataset.bound = "1";
+
+      const data = {
+        labels: ["Neutral", "Negative", "Positive"],
+        datasets: [{
+          data: [
+            {{ (overview.sentiment.neutral.raw or 0.0) }},
+            {{ (overview.sentiment.negative.raw or 0.0) }},
+            {{ (overview.sentiment.positive.raw or 0.0) }}
+          ],
+          borderWidth: 1
+        }]
+      };
+
+      const chart = new Chart(el.getContext("2d"), {
+        type: "doughnut",
+        data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "70%",
+          plugins: {
+            legend: {
+              display: true,
+              labels: { color: "rgba(255,255,255,.72)" }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const v = ctx.raw || 0;
+                  const pct = (v * 100).toFixed(1) + "%";
+                  return " " + ctx.label + ": " + pct;
+                }
+              }
+            }
+          }
+        }
+      });
+    })();
+  </script>
+{% endif %}

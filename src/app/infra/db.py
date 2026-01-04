@@ -20,8 +20,8 @@ class Base(DeclarativeBase):
 def make_engine(dsn: str):
     return create_engine(dsn, pool_pre_ping=True)
 
-def make_session_factory(engine):
-    return sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
+def make_session_factory(engine_):
+    return sessionmaker(bind=engine_, autoflush=False, autocommit=False, expire_on_commit=False)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:

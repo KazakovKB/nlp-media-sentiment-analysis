@@ -61,9 +61,6 @@ class CreateAnalysisJobRequest(BaseModel):
 
 
 class AnalysisJobResponse(BaseModel):
-    """
-    Возвращаем job как доменный объект (dataclass).
-    """
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -72,7 +69,7 @@ class AnalysisJobResponse(BaseModel):
     created_at: datetime
     finished_at: Optional[datetime] = None
 
-    model: dict[str, str]
+    model: dict[str, Optional[str]] = Field(default_factory=dict)
     scope: dict[str, Any]
     params: dict[str, Any] = Field(default_factory=dict)
     error: Optional[str] = None
@@ -96,10 +93,14 @@ def job_to_response(job) -> AnalysisJobResponse:
     model = getattr(job, "model", None)
     scope = getattr(job, "scope", None)
 
-    model_payload = {
-        "name": getattr(model, "name", None) if model else getattr(job, "model_name", None),
-        "version": getattr(model, "version", None) if model else getattr(job, "model_version", None),
-    }
+    name = getattr(model, "name", None) if model else getattr(job, "model_name", None)
+    version = getattr(model, "version", None) if model else getattr(job, "model_version", None)
+
+    model_payload: dict[str, Optional[str]] = {}
+    if name is not None:
+        model_payload["name"] = name
+    if version is not None:
+        model_payload["version"] = version
 
     if hasattr(scope, "__dict__"):
         date_range = getattr(scope, "date_range", None)

@@ -12,18 +12,20 @@
     </b>
   </div>
 
-  <div class="muted">Создан: {{ job.created_at }}</div>
-  <div class="muted">Закончен: {{ job.finished_at or "—" }}</div>
+  <div class="muted">Создан: {{ job.created_at | format_dt }}</div>
+  <div class="muted">Закончен: {{ job.finished_at | format_dt }}</div>
 
   <div class="divider"></div>
 
   <div><b>Объём</b></div>
-  <div class="muted">Источники: {{ job.scope.source_ids }}</div>
+  <div class="muted">
+    Источники: {{ job.scope.source_ids | source_names(sources_map|default({})) }}
+  </div>
   <div class="muted">
     Период:
-    {{ job.scope.date_range.start }}
+    {{ job.scope.date_range.start | format_dt }}
     —
-    {{ job.scope.date_range.end }}
+    {{ job.scope.date_range.end | format_dt }}
   </div>
 
   {% if job.status == "ERROR" %}

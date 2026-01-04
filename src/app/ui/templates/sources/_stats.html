@@ -8,7 +8,11 @@
     </div>
     <div class="card" style="box-shadow:none;">
       <div class="muted2">Доступный период</div>
-      <div class="muted">{{ stats.date_min }} — {{ stats.date_max }}</div>
+      <div class="muted">
+        {{ stats.date_min | format_dt("%d.%m.%Y") }}
+        —
+        {{ stats.date_max | format_dt("%d.%m.%Y") }}
+      </div>
     </div>
   </div>
 {% endif %}

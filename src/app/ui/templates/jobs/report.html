@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+  {% if not job %}
+    <div class="card error">Задача не найдена</div>
+  {% else %}
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Отчёт по задаче #{{ job.id }}</div>
+          <div class="muted2">Статус: {{ job.status }}</div>
+        </div>
+        <a class="btn btn-ghost" href="/jobs/{{ job.id }}">Назад к задаче</a>
+      </div>
+    </div>
+
+    <div style="height:14px"></div>
+
+    {% if not overview %}
+      <div class="muted">Отчёт ещё не готов.</div>
+    {% else %}
+      {% include "jobs/_overview.html" %}
+      <div style="height:14px"></div>
+      {% include "jobs/_sentiment.html" %}
+      <div style="height:14px"></div>
+      {% include "jobs/_chart.html" %}
+      <div style="height:14px"></div>
+      {% include "jobs/_trends.html" %}
+    {% endif %}
+
+  {% endif %}
+{% endblock %}

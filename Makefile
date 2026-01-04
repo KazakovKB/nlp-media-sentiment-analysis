@@ -1,42 +1,59 @@
+include .env
+export
+
 .DEFAULT_GOAL := help
 
 COMPOSE := docker compose
 ENV ?= .env
 
-# Core
+DC := $(COMPOSE) --env-file $(ENV)
+
 up: ## Поднять инфраструктуру и приложение
-	$(COMPOSE) up -d db
-	$(COMPOSE) run --rm db_migrate
-	$(COMPOSE) up -d --build app
+	$(DC) up -d db
+	$(DC) run --rm db_migrate
+	$(DC) up -d rabbitmq
+	$(DC) up -d app
+	$(DC) up -d worker
+	$(DC) up -d web-proxy
+
+up-build: ## Поднять инфраструктуру и приложение (с пересборкой app/worker)
+	$(DC) build app worker db_migrate
+	$(DC) up -d db
+	$(DC) up -d db_migrate
+	$(DC) up -d rabbitmq
+	$(DC) up -d app
+	$(DC) up -d worker
+	$(DC) up -d web-proxy
 
 down: ## Остановить всё и удалить контейнеры
-	$(COMPOSE) down
+	$(DC) down
 
 restart: down up ## Перезапуск всего стека
 
-logs: ## Логи приложения
-	$(COMPOSE) logs -f app
+mlflow-up: ## Поднять MLflow
+	$(DC) --profile mlflow up -d postgres_mlflow mlflow
 
-ps: ## Статус контейнеров
-	$(COMPOSE) ps
+mlflow-down: ## Остановить MLflow
+	$(DC) --profile mlflow stop postgres_mlflow mlflow
 
-# Init / Seeds
+mlflow-rm: ## Снести MLflow контейнеры
+	$(DC) --profile mlflow down
+
 init-lenta: ## Инициализация источника Lenta
-	$(COMPOSE) --profile init run --rm lenta_init
+	$(DC) --profile init run --rm lenta_init
 
-# Tests
 test: ## Запуск тестов (локально в контейнере)
-	$(COMPOSE) run --rm \
-		-e SENTIMENT_ENABLED=0 \
-		-e SENTIMENT_FAIL_OPEN=1 \
-		app python -m pytest
+	$(DC) up -d db_test rabbitmq worker
+	$(DC) run --rm -e DATABASE_URL=$(DATABASE_URL_TEST) db_migrate_test
+	$(DC) run --rm --no-deps -e DATABASE_URL=$(DATABASE_URL_TEST) app python -m pytest
+	$(DC) down
 
 test-unit: ## Быстрые unit-тесты
-	$(COMPOSE) run --rm \
+	$(DC) run --rm \
 		-e SENTIMENT_ENABLED=0 \
 		app pytest -m "not slow"
 
 test-cov: ## Тесты с покрытием
-	$(COMPOSE) run --rm \
+	$(DC) run --rm \
 		-e SENTIMENT_ENABLED=0 \
 		app pytest --cov=src/app --cov-report=term-missing
