@@ -1,5 +1,7 @@
 # NLP-Insight – сервис анализа тональности медиа-контента
 
+[Презентация](https://docs.google.com/presentation/d/15Lbc2qPrCArZOgobpR8rirm3VEvf_KGzelufGjW8p0Q/edit?usp=sharing)
+
 ## Описание проекта
 
 Проект направлен на разработку интеллектуальной системы, которая анализирует тональность
